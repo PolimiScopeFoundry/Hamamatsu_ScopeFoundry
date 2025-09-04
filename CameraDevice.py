@@ -949,13 +949,13 @@ class HamamatsuDeviceMR(HamamatsuDevice):
     
     
         
-    
+if __name__ == "__main__":    
 
-dcam = ctypes.windll.dcamapi
-paraminit = DCAMAPI_INIT(0, 0, 0, 0, None, None) 
-paraminit.size = ctypes.sizeof(paraminit)
-error_code = dcam.dcamapi_init(ctypes.byref(paraminit))
-if (error_code != DCAMERR_NOERROR):
-    raise DCAMException("DCAM initialization failed with error code " + str(error_code))
+    dcam = ctypes.windll.dcamapi
+    paraminit = DCAMAPI_INIT(0, 0, 0, 0, None, None) 
+    paraminit.size = ctypes.sizeof(paraminit)
+    error_code = dcam.dcamapi_init(ctypes.byref(paraminit))
+    if (error_code != DCAMERR_NOERROR):
+        raise DCAMException("DCAM initialization failed with error code " + str(error_code))
 
-n_cameras = paraminit.iDeviceCount
+    n_cameras = paraminit.iDeviceCount

@@ -1,6 +1,5 @@
 from ScopeFoundry import HardwareComponent
-import CameraDevice
-from CameraDevice import HamamatsuDeviceMR, dcam, DCAMERR_NOERROR, DCAMException
+from CameraDevice import HamamatsuDeviceMR
 from numpy import dtype
 
 class HamamatsuHardware(HardwareComponent):
