@@ -5,7 +5,7 @@
 """
 
 from ScopeFoundry import HardwareComponent
-from Hamamatsu_ScopeFoundry.CameraDevice import HamamatsuDevice
+from CameraDevice import HamamatsuDevice
 
 class HamamatsuHardware(HardwareComponent):
     
