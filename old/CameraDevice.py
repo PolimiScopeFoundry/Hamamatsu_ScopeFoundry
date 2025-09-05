@@ -7,6 +7,7 @@ import ctypes
 import ctypes.util
 import numpy as np
 import time
+import Hamamatsu_ScopeFoundry.CameraHardware
 from numpy import log2
 # Hamamatsu constants.
 
@@ -81,10 +82,6 @@ DCAMPROP_TRIGGERPOLARITY__POSITIVE = 2
 DCAMPROP_TRIGGERACTIVE__EDGE = 1
 DCAMPROP_TRIGGERACTIVE__LEVEL = 2
 DCAMPROP_TRIGGERACTIVE__SYNCREADOUT = 3
-
-
-DCAMPROP_TRIGGERGLOBALEXPOSURE__DELAYED = 3
-DCAMPROP_TRIGGERGLOBALEXPOSURE__GLOBALRESET = 5
 
 DCAMCAP_STATUS_ERROR = int("0x00000000", 0)
 DCAMCAP_STATUS_BUSY = int("0x00000001", 0)
@@ -355,16 +352,10 @@ class HamamatsuDevice(object):
         self.number_image_buffers = 0
         self.hardware = hardware #to have a communication between hardware and device, I create this attribute
         #dictionaries for trigger properties
-        self.trig_dict_source = {"internal":DCAMPROP_TRIGGERSOURCE__INTERNAL,
-                                 "external":DCAMPROP_TRIGGERSOURCE__EXTERNAL}
-        self.trig_dict_mode = {"normal":DCAMPROP_TRIGGER_MODE__NORMAL,
-                               "start":DCAMPROP_TRIGGER_MODE__START}
-        self.trig_dict_polarity = {"negative":DCAMPROP_TRIGGERPOLARITY__NEGATIVE,
-                                   "positive":DCAMPROP_TRIGGERPOLARITY__POSITIVE}
-        self.trig_dict_active = {"edge":DCAMPROP_TRIGGERACTIVE__EDGE,
-                                 "syncreadout":DCAMPROP_TRIGGERACTIVE__SYNCREADOUT}
-        self.trig_dict_global = {"delayed": DCAMPROP_TRIGGERGLOBALEXPOSURE__DELAYED ,
-                                 "global_reset": DCAMPROP_TRIGGERGLOBALEXPOSURE__GLOBALRESET }
+        self.trig_dict_source = {"internal":DCAMPROP_TRIGGERSOURCE__INTERNAL, "external":DCAMPROP_TRIGGERSOURCE__EXTERNAL}
+        self.trig_dict_mode = {"normal":DCAMPROP_TRIGGER_MODE__NORMAL, "start":DCAMPROP_TRIGGER_MODE__START}
+        self.trig_dict_polarity = {"negative":DCAMPROP_TRIGGERPOLARITY__NEGATIVE, "positive":DCAMPROP_TRIGGERPOLARITY__POSITIVE}
+        self.trig_dict_active = {"edge":DCAMPROP_TRIGGERACTIVE__EDGE, "syncreadout":DCAMPROP_TRIGGERACTIVE__SYNCREADOUT}
 
         self.acquisition_mode = acquisition_mode
         self.number_frames = number_frames
@@ -691,9 +682,8 @@ class HamamatsuDevice(object):
     def setExposure(self, exposure):
         
         self.setPropertyValue("exposure_time", exposure)
-        #UNCOMMENT
-        # if self.hardware.internal_frame_rate.hardware_read_func: #otherwise, if we have not defined yet the function, we have an error...
-        #     self.hardware.internal_frame_rate.read_from_hardware()
+        if self.hardware.internal_frame_rate.hardware_read_func: #otherwise, if we have not defined yet the function, we have an error...
+            self.hardware.internal_frame_rate.read_from_hardware()
         
     def getExposure(self):
         
@@ -713,9 +703,9 @@ class HamamatsuDevice(object):
         
         self.setPropertyValue("subarray_hpos", 0) 
         self.setPropertyValue("subarray_hsize", hsize)
-        #UNCOMMENT
-        # if self.hardware.optimal_offset.val:
-        #     self.setSubarrayHpos(self.calculateOptimalPos(int(hsize)))
+        
+        if self.hardware.optimal_offset.val:
+            self.setSubarrayHpos(self.calculateOptimalPos(int(hsize)))
     
     def getSubarrayH(self):
         
@@ -760,11 +750,11 @@ class HamamatsuDevice(object):
         
         self.setPropertyValue("subarray_vpos", 0) 
         self.setPropertyValue("subarray_vsize", vsize)
-        #UNCOMMENT
-        # if self.hardware.optimal_offset.val:
+        
+        if self.hardware.optimal_offset.val:
 
-        #     self.setSubarrayVpos(self.calculateOptimalPos(int(vsize)))
-        #     self.getPropertyValue("subarray_vpos")
+            self.setSubarrayVpos(self.calculateOptimalPos(int(vsize)))
+            self.getPropertyValue("subarray_vpos")
         
         
     def getSubarrayV(self):
@@ -877,9 +867,6 @@ class HamamatsuDevice(object):
     def setAcquisition(self, acq_mode):
 #        self.stopAcquisition()
         self.acquisition_mode = acq_mode
-        
-    def getAcquisition(self):
-        return self.acquisition_mode
     
     def setBinning(self, binning):
         
@@ -897,9 +884,6 @@ class HamamatsuDevice(object):
             return None
         else:
             self.number_frames = num_images
-    
-    def getNumberImages(self):
-        return self.number_frames
         
     def setACQMode(self, mode, number_frames = None):
         '''
@@ -936,12 +920,6 @@ class HamamatsuDevice(object):
         if self.isCapturing() != DCAMCAP_STATUS_BUSY:
             self.setPropertyValue("trigger_polarity", self.trig_dict_polarity[trpolarity])
             
-    def setTriggerGlobalExposure(self, trglobexp):
-        
-        if self.isCapturing() != DCAMCAP_STATUS_BUSY:
-            self.setPropertyValue("trigger_global_exposure", self.trig_dict_global[trglobexp])
-            
-            
     def setTriggerActive(self, tractive):
          
         if self.isCapturing() != DCAMCAP_STATUS_BUSY:
@@ -970,14 +948,6 @@ class HamamatsuDevice(object):
         inv_dict = {v: k for k, v in self.trig_dict_active.items()}
 
         return inv_dict[self.getPropertyValue("trigger_active")[0]]
-    
-    
-    def getTriggerGlobalExposure(self):
-        
-        inv_dict = {v: k for k, v in self.trig_dict_global.items()}
-
-        return inv_dict[self.getPropertyValue("trigger_global_exposure")[0]]
-    
     
     def isCapturing(self):
         
@@ -1703,6 +1673,9 @@ class HamamatsuDeviceMR(HamamatsuDevice):
         self.max_backlog = 0
     
     
+        
+    
+
 
 
 if __name__ == "__main__":
@@ -1720,20 +1693,8 @@ if __name__ == "__main__":
     #print("found: {} cameras".format(n_cameras))
     print("camera 0 model:", hamamatsu.getModelInfo())
     print(type(hamamatsu.getModelInfo()))
-    print(hamamatsu.getAcquisition())
-    properties = hamamatsu.getCameraProperties()
     print("=====================")
     print(hamamatsu.getPropertiesValues())
-    
-    
-    
-    
-    #print(hamamatsu.getPropertyText('trigger_active'))
-    
-    hamamatsu.setTriggerGlobalExposure('delayed')
-    
-    print("Trigger Global Exposure:", hamamatsu.getTriggerGlobalExposure())
-    
     
     hamamatsu.startAcquisition()
     [frame, dims] = hamamatsu.getLastFrame() 
@@ -1741,9 +1702,8 @@ if __name__ == "__main__":
     pg.image(np.reshape(np_data,(2048, 2048)).T)
     hamamatsu.stopAcquisition()
     hamamatsu.shutdown()
-    # if sys.flags.interactive !=1 or not hasattr(qtpy.QtCore, 'PYQT_VERSION'): 
-    #     QApplication.exec_()
-    
+    if sys.flags.interactive !=1 or not hasattr(qtpy.QtCore, 'PYQT_VERSION'):
+        QApplication.exec_()
 #
 # The MIT License
 #

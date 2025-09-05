@@ -5,7 +5,9 @@
 """
 
 from ScopeFoundry import HardwareComponent
-from Hamamatsu_ScopeFoundry.CameraDevice import HamamatsuDevice
+import Hamamatsu_ScopeFoundry.CameraDevice
+from Hamamatsu_ScopeFoundry.CameraDevice import HamamatsuDevice, HamamatsuDeviceMR, DCAMERR_NOERROR, DCAMException 
+
 
 class HamamatsuHardware(HardwareComponent):
     
@@ -20,17 +22,17 @@ class HamamatsuHardware(HardwareComponent):
                                                     
         
         self.exposure_time = self.add_logged_quantity('exposure_time', dtype = float, si = False, ro = 0, 
-                                                        spinbox_step = 0.01, spinbox_decimals = 6, initial = 0.01, unit = 's', reread_from_hardware_after_write = True,
-                                                        vmin = 0, vmax = 10)
+                                                       spinbox_step = 0.01, spinbox_decimals = 6, initial = 0.01, unit = 's', reread_from_hardware_after_write = True,
+                                                       vmin = 0)
         
         self.internal_frame_rate = self.add_logged_quantity('internal_frame_rate', dtype = float, si = False, ro = 1,
-                                                            initial = 0, unit = 'fps', reread_from_hardware_after_write = True)
+                                                            initial = 0, unit = 'fps')
         
-        self.acquisition_mode = self.add_logged_quantity('acquisition_mode', dtype = str, si = False, ro = 0, 
-                                                         choices = ["fixed_length", "run_till_abort"], initial = "run_till_abort", reread_from_hardware_after_write = True)
+        self.acquisition_mode = self.add_logged_quantity('acquisition_mode', dtype = str, ro = 0, 
+                                                         choices = ["fixed_length", "run_till_abort"], initial = "run_till_abort")
         
         self.number_frames = self.add_logged_quantity("number_frames", dtype = int, si = False, ro = 0, 
-                                                      initial = 200, vmin = 1, reread_from_hardware_after_write = True)
+                                                      initial = 200, vmin = 1)
         
         #For subarray we have imposed float, since otherwise I cannot modify the step (I should modify the logged quantities script, but I prefer left it untouched)
         self.subarrayh = self.add_logged_quantity("subarray_hsize", dtype=float, si = False, ro= 0,
@@ -68,10 +70,27 @@ class HamamatsuHardware(HardwareComponent):
         self.tractive = self.add_logged_quantity('trigger_active', dtype=str, si=False, ro=0, 
                                                    choices = ["edge", "syncreadout"], initial = 'edge', reread_from_hardware_after_write = True)
         
-        self.trglobal = self.add_logged_quantity('trigger_global_exposure', dtype=str, si=False, ro=0, 
-                                                   choices = ["delayed", "global_reset"], initial = 'delayed', reread_from_hardware_after_write = True)
         
- 
+#         self.preset_sizes = self.add_logged_quantity('preset_sizes', dtype=str, si=False, ro = 0, 
+#                                                      choices = ["2048x2048",
+#                                                                 "2048x1024",
+#                                                                 '2048x512'
+#                                                                 '2048x256'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 '2048x'
+#                                                                 ''
+#                                                                 ''
+#                                                                 ''
+#                                                                 ''
+#                                                                 ''
+#                                                                 ''
+#                                                                 ])
+
     
     def connect(self):
         """
@@ -81,6 +100,11 @@ class HamamatsuHardware(HardwareComponent):
         class. I'm struggling on how I can change this. There must be some function in
         ScopeFoundry
         """
+        
+        #self.trsource.change_readonly(True)
+        #self.trmode.change_readonly(True)
+        #self.trpolarity.change_readonly(True)
+        #self.acquisition_mode.change_readonly(True) #if we change from run_till_abort to fixed_length while running it crashes
         
         
         self.hamamatsu = HamamatsuDevice(camera_id=0, frame_x=self.subarrayh.val, frame_y=self.subarrayv.val, acquisition_mode=self.acquisition_mode.val, 
@@ -95,13 +119,10 @@ class HamamatsuHardware(HardwareComponent):
         self.temperature.hardware_read_func = self.hamamatsu.getTemperature
         self.submode.hardware_read_func = self.hamamatsu.setSubArrayMode
         self.exposure_time.hardware_read_func = self.hamamatsu.getExposure
-        self.acquisition_mode.hardware_read_func = self.hamamatsu.getAcquisition
-        self.number_frames.hardware_read_func = self.hamamatsu.getNumberImages
         self.trsource.hardware_read_func = self.hamamatsu.getTriggerSource
         self.trmode.hardware_read_func = self.hamamatsu.getTriggerMode
         self.trpolarity.hardware_read_func = self.hamamatsu.getTriggerPolarity
         self.tractive.hardware_read_func = self.hamamatsu.getTriggerActive        
-        self.trglobal.hardware_read_func = self.hamamatsu.getTriggerGlobalExposure
         self.subarrayh.hardware_read_func = self.hamamatsu.getSubarrayH
         self.subarrayv.hardware_read_func = self.hamamatsu.getSubarrayV
         self.subarrayh_pos.hardware_read_func = self.hamamatsu.getSubarrayHpos
@@ -119,21 +140,31 @@ class HamamatsuHardware(HardwareComponent):
         self.trsource.hardware_set_func = self.hamamatsu.setTriggerSource
         self.trmode.hardware_set_func = self.hamamatsu.setTriggerMode
         self.trpolarity.hardware_set_func = self.hamamatsu.setTriggerPolarity
-        self.tractive.hardware_set_func = self.hamamatsu.setTriggerActive 
-        self.trglobal.hardware_set_func = self.hamamatsu.setTriggerGlobalExposure
+        self.tractive.hardware_set_func = self.hamamatsu.setTriggerActive        
         self.binning.hardware_set_func = self.hamamatsu.setBinning
         
         self.optimal_offset.hardware_set_func = self.readOnlyWhenOpt
         
         self.read_from_hardware() #read from hardware at connection
         
-
+#         self.subarrayh.update_value(2048)
+#         self.subarrayv.update_value(2048)
+#         self.exposure_time.update_value(0.01)
+#         self.acquisition_mode.update_value("fixed_length")
+#         self.number_frames.update_value(2)
    
     def disconnect(self):
         
+        #self.trsource.change_readonly(False)
+        #self.trmode.change_readonly(False)
+        #self.trpolarity.change_readonly(False)
+        
         if hasattr(self, 'hamamatsu'):
             self.hamamatsu.stopAcquisition()
-            self.hamamatsu.shutdown()             
+            self.hamamatsu.shutdown() 
+#             error_uninit = self.hamamatsu.dcam.dcamapi_uninit()
+#             if (error_uninit != DCAMERR_NOERROR):
+#                 raise DCAMException("DCAM uninitialization failed with error code " + str(error_uninit))    
             del self.hamamatsu
             
         for lq in self.settings.as_list():
