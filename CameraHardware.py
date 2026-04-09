@@ -23,7 +23,7 @@ class HamamatsuHardware(HardwareComponent):
                                                         spinbox_step = 0.01, spinbox_decimals = 6, initial = 0.01, unit = 's', reread_from_hardware_after_write = True,
                                                         vmin = 0, vmax = 10)
         
-        self.internal_frame_rate = self.add_logged_quantity('internal_frame_rate', dtype = float, si = False, ro = 1,
+        self.internal_frame_rate = self.add_logged_quantity('internal_frame_rate', dtype = float, si = False, ro = 0,
                                                             initial = 0, unit = 'fps', reread_from_hardware_after_write = True)
         
         self.acquisition_mode = self.add_logged_quantity('acquisition_mode', dtype = str, si = False, ro = 0, 
@@ -90,6 +90,7 @@ class HamamatsuHardware(HardwareComponent):
                                            subarrayh_pos=self.subarrayh_pos.val, subarrayv_pos = self.subarrayv_pos.val,
                                            binning = self.binning.val, hardware = self) #maybe with more cameras we have to change
         
+        self.hamamatsu.setPropertyValue("readout_speed", 3)
         self.readOnlyWhenOpt()
         self.camera.hardware_read_func = self.hamamatsu.getModelInfo
         self.temperature.hardware_read_func = self.hamamatsu.getTemperature
@@ -107,6 +108,7 @@ class HamamatsuHardware(HardwareComponent):
         self.subarrayh_pos.hardware_read_func = self.hamamatsu.getSubarrayHpos
         self.subarrayv_pos.hardware_read_func = self.hamamatsu.getSubarrayVpos
         self.internal_frame_rate.hardware_read_func = self.hamamatsu.getInternalFrameRate
+        self.internal_frame_rate.hardware_set_func = self.hamamatsu.setInternalFrameRate
         self.binning.hardware_read_func = self.hamamatsu.getBinning
         
         self.subarrayh.hardware_set_func = self.hamamatsu.setSubarrayH

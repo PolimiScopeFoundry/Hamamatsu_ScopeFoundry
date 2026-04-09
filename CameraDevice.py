@@ -990,6 +990,10 @@ class HamamatsuDevice(object):
     def getInternalFrameRate(self):
         
         return self.getPropertyValue("internal_frame_rate")[0]
+    
+    def setInternalFrameRate(self, rate):
+        
+        self.setPropertyValue("internal_frame_rate", rate)
 
     def getTransferInfo(self):
         
@@ -1721,7 +1725,12 @@ if __name__ == "__main__":
     print("camera 0 model:", hamamatsu.getModelInfo())
     print(type(hamamatsu.getModelInfo()))
     print(hamamatsu.getAcquisition())
+    
+    hamamatsu.setPropertyValue("readout_speed", 3)
+    hamamatsu.setPropertyValue("internal_frame_rate",98.0)
+    
     properties = hamamatsu.getCameraProperties()
+
     print("=====================")
     print(hamamatsu.getPropertiesValues())
     
@@ -1738,7 +1747,7 @@ if __name__ == "__main__":
     hamamatsu.startAcquisition()
     [frame, dims] = hamamatsu.getLastFrame() 
     np_data = frame.getData()  
-    pg.image(np.reshape(np_data,(2048, 2048)).T)
+    pg.image(np.reshape(np_data,(2304, 2304)).T)
     hamamatsu.stopAcquisition()
     hamamatsu.shutdown()
     # if sys.flags.interactive !=1 or not hasattr(qtpy.QtCore, 'PYQT_VERSION'): 
